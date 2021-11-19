@@ -1055,7 +1055,6 @@ process pcgr_software_vers {
 sendmail_pcgr
   .mix(sendmail_cpsr)
   .mix(sendmail_multiqc)
-  .mix(sendmail_soma)
   .set { sendmail_all }
 
 process zipup {
