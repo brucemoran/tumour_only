@@ -684,7 +684,6 @@ process M2_scatgath {
     --reference ${fasta} \
     --input ${tumourbam} \
     --panel-of-normals ${pon} \
-    --germline-resource \$(echo ${dbsnp}) \
     --af-of-alleles-not-in-resource 0.0000025 \
     --output ${sampleID}"."\${SCATGATHN}".mutect2.vcf" \
     --disable-sequence-dictionary-validation true \
