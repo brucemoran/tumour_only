@@ -136,7 +136,7 @@ if(params.sampleCsv){
   Channel.fromPath("${params.sampleCsv}")
          .splitCsv( header: true )
          .map { row -> [row.sampleID, row.meta, file(row.read1), file(row.read2)] }
-         .into { bbduking }
+         .set { bbduking }
 }
 
 if(params.sampleCat){
@@ -495,7 +495,6 @@ process Hcaller {
 
   output:
   tuple val(sampleID), val(meta), file('*sort.hc.vcf') into hc_gt
-  tuple val(sampleID) into ver_germID
 
   script:
   def taskmem = task.memory == null ? "" : "--java-options \"-Xmx" + javaTaskmem("${task.memory}") + "\""
@@ -1004,7 +1003,7 @@ process MultiQC {
   file(fastqcs) from fastqc_multiqc.collect()
   file(gtkrcls) from gtkrcl_multiqc.collect()
   file(multimetrics) from multimetrics_multiqc.collect()
-  file(mrkdups) from mrkdup_multiqc_col
+  file(mrkdups) from mrkdup_multiqc.collect()
   file(mosdepth) from mosdepth_multiqc.collect()
 
   output:
