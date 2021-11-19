@@ -277,7 +277,7 @@ process bwamem {
   def fa = "${bwa}/*fasta"
   """
   DATE=\$(date +"%Y-%m-%dT%T")
-  RGLINE="@RG\\tID:${sampleID}\\tPL:ILLUMINA\\tSM:${sampleID}\\tDS:${type}\\tCN:UCD\\tLB:LANE_X\\tDT:\$DATE"
+  RGLINE="@RG\\tID:${sampleID}\\tPL:ILLUMINA\\tSM:${sampleID}\\tDS:tumour_only\\tCN:UCD\\tLB:LANE_X\\tDT:\$DATE"
 
   bwa mem \
     -t${task.cpus} \
