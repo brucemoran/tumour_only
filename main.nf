@@ -664,7 +664,7 @@ process M2_scatgath {
   file(fasta) from reference.fa
   file(fai) from reference.fai
   file(dict) from reference.dict
-  file(dbsnp) from reference.dbsnp
+  file(dbsnp_files) from reference.dbsnp
 
   output:
   tuple val(sampleID), file('*sort.mutect2.vcf') into mutect2_gt
@@ -675,6 +675,7 @@ process M2_scatgath {
   script:
   def taskmem = task.memory == null ? "" : "--java-options \"-Xmx" + javaTaskmem("${task.memory}") + "\""
   pon = params.assembly == "GRCh37" ? "${pondir}/Mutect2-WGS-panel-b37.vcf.gz" : "${pondir}/KG_pon.hg38.vcf.gz"
+  def dbsnp = "${dbsnp_files}/*gz"
   """
   SCATGATHN=\$(echo ${intlist} | perl -ane '@s=split(/\\./);print\$s[2];')
   gatk ${taskmem} \
@@ -683,7 +684,7 @@ process M2_scatgath {
     --reference ${fasta} \
     --input ${tumourbam} \
     --panel-of-normals ${pon} \
-    --germline-resource ${dbsnp} \
+    --germline-resource \$(echo ${dbsnp}) \
     --af-of-alleles-not-in-resource 0.0000025 \
     --output ${sampleID}"."\${SCATGATHN}".mutect2.vcf" \
     --disable-sequence-dictionary-validation true \
