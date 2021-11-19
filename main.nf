@@ -475,7 +475,7 @@ process Mosdepth {
 // Groovy to combine scatter-gather BEDs with bam file for germline
 hcbedding = hc_bedding.flatten()
 hc_germ
-  .map { it -> [it[0],it[1],it[2],it[3],it[4]] }
+  .map { it -> [it[0],it[1],it[2],it[3]] }
   .combine(hcbedding)
   .set { hcgermbedding }
 
