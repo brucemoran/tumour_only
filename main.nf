@@ -674,7 +674,7 @@ process M2_scatgath {
 
   script:
   def taskmem = task.memory == null ? "" : "--java-options \"-Xmx" + javaTaskmem("${task.memory}") + "\""
-  pon = params.assembly == "GRCh37" ? "${pondir}/Mutect2-WGS-panel-b37.vcf" : "${pondir}/KG_pon.hg38.vcf"
+  pon = params.assembly == "GRCh37" ? "${pondir}/Mutect2-WGS-panel-b37.vcf.gz" : "${pondir}/KG_pon.hg38.vcf.gz"
   """
   SCATGATHN=\$(echo ${intlist} | perl -ane '@s=split(/\\./);print\$s[2];')
   gatk ${taskmem} \
