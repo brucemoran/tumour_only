@@ -550,7 +550,7 @@ process Hc_merge {
 }
 
 // 2.3: CPSR annotation of GATK4 Germline
-process Cpsr_rep {
+process cpsrreport {
 
   label 'med_mem'
 
@@ -940,7 +940,7 @@ process vepann {
 
 // 3.3 PCGR report
 // take all mutations in consensus.tab from pass.vcfs into single VCF for PCGR
-process Pcgr_rep {
+process pcgrreport {
 
   label 'low_mem'
   errorStrategy 'retry'
