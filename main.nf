@@ -908,7 +908,7 @@ process vepann {
   file(pcgrbase) from reference.pcgrbase
 
   output:
-  tuple val(sampleID), val(meta), file("${vcf_anno}") into runPCGR
+  tuple val(sampleID), val(meta), file("*.vep.vcf") into runPCGR
 
   script:
   def grch_vers = "${grchver}".split("\\/")[-1]
