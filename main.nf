@@ -888,11 +888,6 @@ process vepHC {
   """
 }
 
-metas_pcgr
-  .join(mutect2_veping)
-  .map { it -> tuple(it[0], it[1..-1]).flatten() }
-  .set { vepann_inputs }
-
 process vepann {
 
   label 'med_mem'
@@ -900,7 +895,7 @@ process vepann {
   publishDir path: "${params.outDir}/samples/${sampleID}/${caller}", mode: "copy", pattern: "${sampleID}.${caller}.snv_indel.pass.vep.vcf"
 
   input:
-  tuple val(sampleID), val(meta), file(vcf) from vepann_inputs
+  tuple val(sampleID), file(vcf) from mutect2_veping
   file(fasta) from reference.fa
   file(fai) from reference.fai
   file(dict) from reference.dict
@@ -908,7 +903,7 @@ process vepann {
   file(pcgrbase) from reference.pcgrbase
 
   output:
-  tuple val(sampleID), val(meta), file("*.vep.vcf") into runPCGR
+  tuple val(sampleID), file("*.vep.vcf") into runPCGR
 
   script:
   def grch_vers = "${grchver}".split("\\/")[-1]
@@ -950,7 +945,7 @@ process pcgrreport {
   publishDir "${params.outDir}/samples/${sampleID}/pcgr", mode: "copy", pattern: "*[!.html]"
 
   input:
-  tuple val(sampleID), val(meta), file(vcf) from runPCGR
+  tuple val(sampleID), file(vcf) from runPCGR
   file(grchver) from reference.grchvers
   file(pcgrbase) from reference.pcgrbase
   file(exomebase) from reference.seqlevel
@@ -974,7 +969,7 @@ process pcgrreport {
     --output_dir ./ \
     --genome_assembly ${grch_vers} \
     --conf ${config} \
-    --sample_id \$META \
+    --sample_id ${sampleID} \
     --input_vcf ${vcf} \
     --no-docker \
     --force_overwrite \
