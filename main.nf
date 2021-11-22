@@ -892,7 +892,7 @@ process vepann {
 
   label 'med_mem'
 
-  publishDir path: "${params.outDir}/samples/${sampleID}/${caller}", mode: "copy", pattern: "${sampleID}.${caller}.snv_indel.pass.vep.vcf"
+  publishDir path: "${params.outDir}/samples/${sampleID}/mutect2", mode: "copy", pattern: "${sampleID}.mutect2.snv_indel.pass.vep.vcf"
 
   input:
   tuple val(sampleID), file(vcf) from mutect2_veping
@@ -930,6 +930,10 @@ process vepann {
     --ccds \
     --force_overwrite \
     --verbose
+
+  ##remove calls on decoys
+  perl -ane 'if(\$F[0]=~m/^#/){print \$_;}else{if(\$F[0]!~m/_/){print \$_;}}' ${vcf_anno} >1
+  mv 1 ${vcf_anno}
   """
 }
 
@@ -971,7 +975,6 @@ process pcgrreport {
     --no-docker \
     --force_overwrite \
     --no_vcf_validate \
-    --estimate_msi_status \
     --include_trials \
     --assay ${assay}
 
