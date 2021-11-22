@@ -960,9 +960,6 @@ process pcgrreport {
   assay = params.seqlevel == "exome" ? "WES" : "WGS"
   """
   {
-  ##want META to allow spaces, remove non-alphanum
-  META=\$(echo ${meta} | perl -ane '\$_=~s/[^a-zA-Z0-9_ \\n]//g; print \$_;' | sed 's/\\s */_/g')
-
   ##PCGR 0.9.1
   pcgr.py \
     --pcgr_dir ${pcgrbase} \
