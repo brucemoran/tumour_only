@@ -1065,7 +1065,9 @@ process zipup {
   script:
   """
   mkdir html_reports && mv *html ./html_reports/
-  mkdir other && mv *.* ./other/
+  if [[ \$(find ./ -maxdepth 0 | wc -l) > 1 ]]; then
+    mkdir other && mv *.* ./other/
+  fi
   zip -r ${params.runID}.tumour_only.zip *
   """
 }
