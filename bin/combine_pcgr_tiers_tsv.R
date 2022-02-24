@@ -102,5 +102,3 @@ combine_tsvs <- function(path = getwd(),
   readr::write_tsv(x = tsv_tb,
                    file = paste0(out_tag, ".", out_nm, ".combined.tsv"))
 }
-
-combine_tsvs()
