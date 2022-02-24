@@ -945,8 +945,8 @@ process pcgrreport {
   errorStrategy 'retry'
   maxRetries 3
 
-  publishDir "${params.outDir}/reports/pcgr", mode: "copy", pattern: "*html"
-  publishDir "${params.outDir}/samples/${sampleID}/pcgr", mode: "copy", pattern: "*[!.html]"
+  publishDir "${params.outDir}/reports/pcgr", mode: "copy", pattern: "${sampleID}.pcgr_acmg.${grch_vers}.html"
+  publishDir "${params.outDir}/samples/${sampleID}/pcgr", mode: "copy"
 
   input:
   tuple val(sampleID), file(vcf) from runPCGR
@@ -956,7 +956,7 @@ process pcgrreport {
 
   output:
   file('*') into completed_pcgr
-  file("*.pcgr_acmg.${grch_vers}.html") into sendmail_pcgr
+  file("${sampleID}.pcgr_acmg.${grch_vers}.html") into sendmail_pcgr
 
   script:
   grch_vers = "${grchver}".split("\\/")[-1]
@@ -1059,7 +1059,7 @@ process zipup {
   input:
   file(send_all) from sendmail_all.collect()
 
-  output:
+  output:1
   file("${params.runID}.tumour_only.zip") into send_zip
 
   script:
