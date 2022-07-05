@@ -12,6 +12,7 @@ def helpMessage() {
 
     -profile        [str]     singularity,refs
     --assembly      [str]     GRCh37 or GRCh38
+    --exome         [bool]    true to run exome, needs input of exomeBedFile of Url
     --exomeTag      [str]     naming for exome outputs when supplied;
                               tag is then used in somatic_n-of-1,
                               batch_somatic and tumour_only pipelines to select
@@ -325,7 +326,7 @@ if(file("$params.outDir/gnomad").exists()){
 ================================================================================
 */
 
-if(!file("$params.outDir/exome/$params.exomeTag").exists()){
+if(params.exome){
   if(params.exomeBedURL){
     process exome_url {
 
