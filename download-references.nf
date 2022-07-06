@@ -718,7 +718,7 @@ if(!file("$params.outDir/gridss").exists()){
   process hartwigmed_dl {
 
     label 'low_mem'
-    
+
     output:
     file('GRIDSS-Purple-Linx-Docker.zip') into gridss_zip
 
@@ -750,19 +750,18 @@ if(!file("$params.outDir/gridss").exists()){
 
     script:
     hg = params.assembly == "GRCh37" ? "37" : "38"
-    if( params.assembly == "GRCh37" )
-      """
-      7z x ${zip}
-      mv GRIDSS-Purple-Linx-Docker/gpl_ref_data_${hg}.gz gpl_ref_data_hg${hg}.tar.gz
-      tar -xf gpl_ref_data_hg${hg}.tar.gz
-      rm -rf GRIDSS-Purple-Linx-Docker gpl_ref_data_hg${hg}.tar.gz
+    """
+    7z x ${zip}
+    mv GRIDSS-Purple-Linx-Docker/gpl_ref_data_${hg}.gz gpl_ref_data_hg${hg}.tar.gz
+    tar -xf gpl_ref_data_hg${hg}.tar.gz
+    rm -rf GRIDSS-Purple-Linx-Docker gpl_ref_data_hg${hg}.tar.gz
 
-      ##blacklist
-      sed 's/chr//g' dbs/gridss/ENCFF001TDO.bed > gridss_blacklist.noChr.bed
+    ##blacklist
+    sed 's/chr//g' dbs/gridss/ENCFF001TDO.bed > gridss_blacklist.noChr.bed
 
-      perl ${workflow.projectDir}/bin/exact_match_by_col.pl ${fai},0 gridss_blacklist.noChr.bed,0 > gridss_blacklist.noChr.1.bed
-      mv gridss_blacklist.noChr.1.bed gridss_blacklist.noChr.bed
-      """
+    perl ${workflow.projectDir}/bin/exact_match_by_col.pl ${fai},0 gridss_blacklist.noChr.bed,0 > gridss_blacklist.noChr.1.bed
+    mv gridss_blacklist.noChr.1.bed gridss_blacklist.noChr.bed
+    """
   }
 }
 
