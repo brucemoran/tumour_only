@@ -715,13 +715,35 @@ if(!file("$params.outDir/pcgr").exists()){
 
 if(!file("$params.outDir/gridss").exists()){
 
-  process hartwigmed {
+  process hartwigmed_dl {
+
+    label 'low_mem'
+
+    input:
+    file(fai) from fai_gridss
+
+    output:
+    file('GRIDSS-Purple-Linx-Docker.zip') into gridss_zip
+
+    script:
+    if( params.assembly == "GRCh37" )
+      """
+      wget --content-disposition ${params.hartwigGPLURL37}
+      """
+    else
+      """
+      wget --content-disposition ${params.hartwigGPLURL38}
+      """
+  }
+
+  process hartwigmed_zp {
 
     label 'low_mem'
     publishDir path: "${params.outDir}/gridss", mode: "copy"
 
     input:
     file(fai) from fai_gridss
+    file(zip) from gridss_zip
 
     output:
     file('dbs') into gridss_db
@@ -730,32 +752,17 @@ if(!file("$params.outDir/gridss").exists()){
     file('dbs/gridss/gridss.properties') into gridss_pr
 
     script:
+    hg = params.assembly == "GRCh37" ? "37" : "38"
     if( params.assembly == "GRCh37" )
       """
-      wget --content-disposition ${params.hartwigGPLURL37}
-
-      7z x GRIDSS-Purple-Linx-Docker.zip
-      mv GRIDSS-Purple-Linx-Docker/gpl_ref_data_37.gz gpl_ref_data_hg37.tar.gz
-      tar -xf gpl_ref_data_hg37.tar.gz
-      rm -rf GRIDSS-Purple-Linx-Docker.zip GRIDSS-Purple-Linx-Docker gpl_ref_data_hg37.tar.gz
+      7z x ${zip}
+      mv GRIDSS-Purple-Linx-Docker/gpl_ref_data_${hg}.gz gpl_ref_data_hg${hg}.tar.gz
+      tar -xf gpl_ref_data_hg${hg}.tar.gz
+      rm -rf GRIDSS-Purple-Linx-Docker gpl_ref_data_hg${hg}.tar.gz
 
       ##blacklist
       sed 's/chr//g' dbs/gridss/ENCFF001TDO.bed > gridss_blacklist.noChr.bed
 
-      perl ${workflow.projectDir}/bin/exact_match_by_col.pl ${fai},0 gridss_blacklist.noChr.bed,0 > gridss_blacklist.noChr.1.bed
-      mv gridss_blacklist.noChr.1.bed gridss_blacklist.noChr.bed
-      """
-    else
-      """
-      wget --content-disposition ${params.hartwigGPLURL38}
-      
-      7z x GRIDSS-Purple-Linx-Docker.zip
-      mv GRIDSS-Purple-Linx-Docker/gpl_ref_data_38.gz gpl_ref_data_hg38.tar.gz
-      tar -xf gpl_ref_data_hg38.tar.gz
-      rm -rf GRIDSS-Purple-Linx-Docker.zip GRIDSS-Purple-Linx-Docker gpl_ref_data_hg38.tar.gz
-
-      ##blacklist
-      sed 's/chr//g' dbs/gridss/ENCFF001TDO.bed > gridss_blacklist.noChr.bed
       perl ${workflow.projectDir}/bin/exact_match_by_col.pl ${fai},0 gridss_blacklist.noChr.bed,0 > gridss_blacklist.noChr.1.bed
       mv gridss_blacklist.noChr.1.bed gridss_blacklist.noChr.bed
       """
