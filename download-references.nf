@@ -732,7 +732,7 @@ if(!file("$params.outDir/gridss").exists()){
     script:
     if( params.assembly == "GRCh37" )
       """
-      wget --content-disposition https://nextcloud.hartwigmedicalfoundation.nl/s/LTiKTd8XxBqwaiC/download?path=%2FHMFTools-Resources%2FGRIDSS-Purple-Linx-Docker
+      wget --content-disposition ${params.hartwigGPLURL37}
 
       7z x GRIDSS-Purple-Linx-Docker.zip
       mv GRIDSS-Purple-Linx-Docker/gpl_ref_data_37.gz gpl_ref_data_hg37.tar.gz
@@ -747,8 +747,8 @@ if(!file("$params.outDir/gridss").exists()){
       """
     else
       """
-      wget --content-disposition https://nextcloud.hartwigmedicalfoundation.nl/s/LTiKTd8XxBqwaiC/download?path=%2FHMFTools-Resources%2FGRIDSS-Purple-Linx-Docker
-
+      wget --content-disposition ${params.hartwigGPLURL38}
+      
       7z x GRIDSS-Purple-Linx-Docker.zip
       mv GRIDSS-Purple-Linx-Docker/gpl_ref_data_38.gz gpl_ref_data_hg38.tar.gz
       tar -xf gpl_ref_data_hg38.tar.gz
