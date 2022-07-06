@@ -718,10 +718,7 @@ if(!file("$params.outDir/gridss").exists()){
   process hartwigmed_dl {
 
     label 'low_mem'
-
-    input:
-    file(fai) from fai_gridss
-
+    
     output:
     file('GRIDSS-Purple-Linx-Docker.zip') into gridss_zip
 
