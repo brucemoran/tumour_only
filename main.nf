@@ -119,7 +119,7 @@ reference.refflat = Channel.value(file(params.genomes[params.assembly].refflat))
 
 //if seqlevel is not WGS, there is a params.genomes dir per exome or panel
 //holding a levelTag dir which we need to specify
-reference.seqlevel = Channel.value(file(params.genomes[params.assembly].params.seqlevel))
+reference.seqlevel = Channel.value(file(params.genomes[params.assembly]."${params.seqlevel}"))
 
 //set cosmic
 reference.cosmic = params.cosmic == true ? Channel.value(file(params.genomes[params.assembly].cosmic)) : null
@@ -789,7 +789,7 @@ process M2_con_filt {
   file(fasta) from reference.fa
   file(fai) from reference.fai
   file(dict) from reference.dict
-  file(gps_files) from reference.seqlevel
+  file(levelbase) from reference.seqlevel
   file(intlist) from reference.intlist
 
   output:
@@ -799,7 +799,7 @@ process M2_con_filt {
   script:
   def taskmem = task.memory == null ? "" : "--java-options \"-Xmx" + javaTaskmem("${task.memory}") + "\""
   hg = params.assembly == "GRCh37" ? "hg19" : "hg38"
-  gpsgz = params.seqlevel != "wgs" ? "${gps_files}/${params.levelTag}/af-only-gnomad.${params.levelTag}.${hg}.noChr.vcf.gz" : "${gps_files}/af-only-gnomad.wgs.${hg}.noChr.vcf.gz"
+  gpsgz = params.seqlevel != "wgs" ? "${levelbase}/${params.levelTag}/af-only-gnomad.${params.levelTag}.${hg}.noChr.vcf.gz" : "${levelbase}/af-only-gnomad.wgs.${hg}.noChr.vcf.gz"
   """
   gatk ${taskmem} \
     GetPileupSummaries \
