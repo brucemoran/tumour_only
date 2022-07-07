@@ -191,7 +191,7 @@ process bbduk {
   tuple val(sampleID), val(meta), file('*.bbduk.R1.fastq.gz'), file('*.bbduk.R2.fastq.gz') into bwa_memming
   tuple val(sampleID), val(meta), file('*.bbduk.R1.fastq.gz'), file('*.bbduk.R2.fastq.gz'), file(read1), file(read2) into fastping
   tuple val(sampleID), val(meta), file(read1), file(read2) into fastqcing
-  tuple vale(sampleID), val(meta) into pcgr_meta
+  tuple val(sampleID), val(meta) into pcgr_meta
 
   script:
   def taskmem = task.memory == null ? "" : "-Xmx" + javaTaskmem("${task.memory}")
