@@ -12,23 +12,24 @@ def helpMessage() {
 
     -profile        [str]     singularity,refs
     --assembly      [str]     GRCh37 or GRCh38
-    --exome         [bool]    true to run exome, needs input of exomeBedFile of Url
-    --exomeTag      [str]     naming for exome outputs when supplied;
+    --seqLevel      [str]     one of WGS (default), exome or panel; used to publish
+                              files to directory in <assembly>/<seqLevel>
+    --levelTag      [str]     naming for exome/panel outputs when supplied;
                               tag is then used in somatic_n-of-1,
                               batch_somatic and tumour_only pipelines to select
-                              relevant exome data (default: the first element
-                              when exome file name is split on '.')
+                              relevant seqLevel data (default: the first element
+                              when seqLevel file name is split on '.')
 
     --outputDir        [str]  directory to save output (an <assebmbly> dir
                               is created therein)
 
     one of:
-    --exomeBedURL   [str]     URL of exome BED file (ZIP or BED)
-    --exomeBedFile  [str]     path to local exome BED file
+    --levelBedURL   [str]     URL of exome/panel BED file (ZIP or BED)
+    --levelBedFile  [str]     path to local exome/panel BED file
 
   General Optional Arguments:
 
-    --exomeAssembly [str]     assembly the exome BED file used in it's creation
+    --levelAssembly [str]     assembly the exome/panel BED file used in it's creation
                               (default: GRCh37)
     --localPCGRdata [str]     local copy of PCGR data bundle to use
     --cosmicUser    [str]     COSMIC login credentials, user email
@@ -58,22 +59,22 @@ params.gsurl38 = "gs://genomics-public-data/resources/broad/hg38/v0"
 //lowercase assembly
 params.assemblylc = "${params.assembly}".toLowerCase()
 
-//specify single exome
-if(params.exomeBedFile && params.exomeBedURL){
-  Channel.from("Please only specify --exomeBedURL or --exomeBedFile!\nN.B. that subsquent runs using -resume can be used to add further -exomeBedURL or --exomeBedFile").println { it }
+//specify level files required
+if(params.levelBedFile && params.levelBedURL){
+  Channel.from("Please only specify --levelBedURL or --levelBedFile!\nN.B. that subsquent runs using -resume can be used to add further -levelBedURL or --levelBedFile").println { it }
 }
-if(params.exomeBedFile && params.exomeBedURL){
-  Channel.from("Only one of --exomeBedFile or --exomeBedURL should be used").println { it }
+if(params.levelBedFile && params.levelBedURL){
+  Channel.from("Only one of --levelBedFile or --levelBedURL should be used").println { it }
   exit 147
 }
 
-//make exomeTag if not extant but exomeBedFile or URL are specified
-if(!params.exomeTag){
-  if(params.exomeBedURL) {
-    params.exomeTag = "${params.exomeBedURL}".split("\\.")[0]
+//make levelTag if not extant but levelBedFile or URL are specified
+if(!params.levelTag){
+  if(params.levelBedURL) {
+    params.levelTag = "${params.levelBedURL}".split("\\.")[0]
   }
-  if(params.exomeBedFile) {
-    params.exomeTag = "${params.exomeBedFile}".split("\\.")[0]
+  if(params.levelBedFile) {
+    params.levelTag = "${params.levelBedFile}".split("\\.")[0]
   }
 }
 
@@ -128,7 +129,7 @@ if(!file("$params.outDir/bwa").exists()){
     tuple val(faval), file(fagz) from fasta
 
     output:
-    tuple file('*.noChr.fasta'), file('*.noChr.fasta.fai') into (fasta_bwa, fasta_seqza, fasta_msi, fasta_dict, fasta_2bit, fasta_exome_biall, fasta_wgs_biall, fasta_pathseq)
+    tuple file('*.noChr.fasta'), file('*.noChr.fasta.fai') into (fasta_bwa, fasta_seqza, fasta_msi, fasta_dict, fasta_2bit, fasta_level_biall, fasta_wgs_biall, fasta_pathseq)
 
     script:
     def fa = "${fagz}".split("\\.gz")[0]
@@ -150,7 +151,7 @@ if(!file("$params.outDir/bwa").exists()){
 
     output:
     file(dict) into dict_win
-    tuple file(fa), file(fai), file(dict) into ( fasta_dict_exome, fasta_dict_wgs, fasta_dict_gensiz )
+    tuple file(fa), file(fai), file(dict) into ( fasta_dict_level, fasta_dict_wgs, fasta_dict_gensiz )
     file(fai) into fai_gridss
 
     script:
@@ -194,8 +195,8 @@ if(file("$params.outDir/bwa").exists()){
 
     output:
     file('bwa/*.dict') into dict_win
-    tuple file('bwa/*noChr.fasta'), file('bwa/*.fai'), file('bwa/*.dict') into (fasta_dict_exome, fasta_dict_wgs, fasta_dict_gensiz)
-    tuple file('bwa/*.noChr.fasta'), file('bwa/*.noChr.fasta.fai') into (fasta_bwa, fasta_seqza, fasta_msi, fasta_dict, fasta_2bit, fasta_exome_biall, fasta_wgs_biall, fasta_pathseq)
+    tuple file('bwa/*noChr.fasta'), file('bwa/*.fai'), file('bwa/*.dict') into (fasta_dict_level, fasta_dict_wgs, fasta_dict_gensiz)
+    tuple file('bwa/*.noChr.fasta'), file('bwa/*.noChr.fasta.fai') into (fasta_bwa, fasta_seqza, fasta_msi, fasta_dict, fasta_2bit, fasta_level_biall, fasta_wgs_biall, fasta_pathseq)
     file('bwa/*.noChr.fasta.fai') into fai_gridss
 
     script:
@@ -286,7 +287,7 @@ if(!file("$params.outDir/gnomad").exists()){
     publishDir path: "${params.outDir}/gnomad", mode: "copy"
 
     output:
-    file('af-only-gnomad.*') into ( exome_biall_gnomad, wgs_biall_gnomad )
+    file('af-only-gnomad.*') into ( level_biall_gnomad, wgs_biall_gnomad )
 
     script:
     if( params.assembly == "GRCh37" )
@@ -312,7 +313,7 @@ if(file("$params.outDir/gnomad").exists()){
     file(gnomad_dir) from gnomad_chan
 
     output:
-    file('gnomad/af-only-gnomad.*') into ( exome_biall_gnomad, wgs_biall_gnomad )
+    file('gnomad/af-only-gnomad.*') into ( level_biall_gnomad, wgs_biall_gnomad )
 
     script:
     """
@@ -322,34 +323,34 @@ if(file("$params.outDir/gnomad").exists()){
 
 /*
 ================================================================================
-                          3. EXOME PROCESS AND PARSING
+                          3. SEQLEVEL PROCESS AND PARSING
 ================================================================================
 */
 
-if(params.exome){
-  if(params.exomeBedURL){
-    process exome_url {
+if(params.seqLevel != "WGS"){
+  if(params.levelBedURL){
+    process level_url {
 
       label 'low_mem'
 
       output:
-      tuple file("${params.exomeTag}.url.bed"), file("README.${params.exomeTag}.url.bed") into exome_parse_bed
+      tuple file("${params.levelTag}.url.bed"), file("README.${params.levelTag}.url.bed") into level_parse_bed
 
       script:
       """
       ##download URL
-      echo "Exome bed used here is from:" > README.${params.exomeTag}.url.bed
-      echo ${params.exomeBedURL} >> README.${params.exomeTag}.url.bed
+      echo "${params.seqLevel} bed used here is from:" > README.${params.levelTag}.url.bed
+      echo ${params.levelBedURL} >> README.${params.levelTag}.url.bed
 
-      wget ${params.exomeBedURL}
-      if [[ ${params.exomeBedURL} =~ zip\$ ]]; then
-        7za x -so *.zip  > ${params.exomeTag}.url.bed
+      wget ${params.levelBedURL}
+      if [[ ${params.levelBedURL} =~ zip\$ ]]; then
+        7za x -so *.zip  > ${params.levelTag}.url.bed
       fi
-      if [[ ${params.exomeBedURL} =~ bed\$ ]]; then
-        mv *.bed ${params.exomeTag}.url.bed
+      if [[ ${params.levelBedURL} =~ bed\$ ]]; then
+        mv *.bed ${params.levelTag}.url.bed
       fi
-      if [[ ! ${params.exomeBedURL} =~ zip\$ || ${params.exomeBedURL} =~ bed\$ ]]; then
-        echo "No ZIP or BED files resulting from ${params.exomeBedURL}"
+      if [[ ! ${params.levelBedURL} =~ zip\$ || ${params.levelBedURL} =~ bed\$ ]]; then
+        echo "No ZIP or BED files resulting from ${params.levelBedURL}"
         echo "Please try another URL with ZIP or BED file resulting"
         exit 147
       fi
@@ -357,50 +358,50 @@ if(params.exome){
     }
   }
 
-  if(params.exomeBedFile){
-    Channel.fromPath("${params.exomeBedFile}").set { exomebed_file }
-    process exome_file {
+  if(params.levelBedFile){
+    Channel.fromPath("${params.levelBedFile}").set { levelbed_file }
+    process level_file {
 
       label 'low_mem'
-      publishDir path: "${params.outDir}/exome/${params.exomeTag}", mode: "copy"
+      publishDir path: "${params.outDir}/${params.seqLevel}/${params.levelTag}", mode: "copy"
 
       input:
-      file(exome_bed_file) from exomebed_file
+      file(level_bed_file) from levelbed_file
 
       output:
-      tuple file("${params.exomeTag}.file.bed"), file("README.${params.exomeTag}.file.bed") into exome_parse_bed
+      tuple file("${params.levelTag}.file.bed"), file("README.${params.levelTag}.file.bed") into level_parse_bed
 
       script:
       """
       ##use file as input
-      if [[ ${exome_bed_file} =~ bed\$ ]]; then
-        echo "Exome bed used here is from:" > README.${params.exomeTag}.file.bed
-        echo ${exome_bed_file} >> README.${params.exomeTag}.file.bed
-        mv ${exome_bed_file} ${params.exomeTag}.file.bed
+      if [[ ${level_bed_file} =~ bed\$ ]]; then
+        echo "${params.seqLevel} bed used here is from:" > README.${params.levelTag}.file.bed
+        echo ${level_bed_file} >> README.${params.levelTag}.file.bed
+        mv ${level_bed_file} ${params.levelTag}.file.bed
       else
-        echo "BED file ${exome_bed_file} is not a BED file, please retry"
+        echo "BED file ${level_bed_file} is not a BED file, please retry"
         exit 147
       fi
       """
     }
   }
 
-  process exome_parse {
+  process level_parse {
 
     input:
-    tuple file(exome_bed), file(readme) from exome_parse_bed
+    tuple file(level_bed), file(readme) from level_parse_bed
 
     output:
-    tuple file("${params.exomeTag}.lo.bed"), file(readme) into exome_liftover
+    tuple file("${params.levelTag}.lo.bed"), file(readme) into level_liftover
 
     script:
     """
     ##remove any non-chr, coord lines in top of file
-    CHR=\$(tail -n1 ${exome_bed} | perl -ane 'print \$F[0];')
+    CHR=\$(tail -n1 ${level_bed} | perl -ane 'print \$F[0];')
     if [[ \$CHR =~ "chr" ]]; then
-      perl -ane 'if(\$F[0]=~m/^chr/){print \$_;}' ${exome_bed} > ${params.exomeTag}.lo.bed
+      perl -ane 'if(\$F[0]=~m/^chr/){print \$_;}' ${level_bed} > ${params.levelTag}.lo.bed
     else
-      perl -ane 'if(\$F[0]=~m/^[0-9MXY]/){print \$_;}' ${exome_bed} > ${params.exomeTag}.lo.bed
+      perl -ane 'if(\$F[0]=~m/^[0-9MXY]/){print \$_;}' ${level_bed} > ${params.levelTag}.lo.bed
     fi
     """
   }
@@ -412,49 +413,49 @@ if(params.exome){
     maxRetries 3
 
     input:
-    tuple file(exome_bed), file(readme) from exome_liftover
+    tuple file(level_bed), file(readme) from level_liftover
 
     output:
-    tuple file("${params.exomeTag}.lift.bed"), file(readme) into exome_bed_liftd
+    tuple file("${params.levelTag}.lift.bed"), file(readme) into level_bed_liftd
 
     script:
-    def hgTohg = params.exomeAssembly == "GRCh38" ? "hg38ToHg19" : "hg19ToHg38"
-    def hg = params.exomeAssembly == "GRCh38" ? "hg38" : "hg19"
+    def hgTohg = params.levelAssembly == "GRCh38" ? "hg38ToHg19" : "hg19ToHg38"
+    def hg = params.levelAssembly == "GRCh38" ? "hg38" : "hg19"
 
-    if( params.assembly == params.exomeAssembly )
+    if( params.assembly == params.levelAssembly )
       """
-      cp ${exome_bed} ${params.exomeTag}.lift.bed
+      cp ${level_bed} ${params.levelTag}.lift.bed
       """
     else
       """
       wget http://hgdownload.cse.ucsc.edu/goldenPath/${hg}/liftOver/${hgTohg}.over.chain.gz
-      liftOver ${exome_bed} ${hgTohg}.over.chain.gz ${params.exomeTag}.lift.bed unmapped
+      liftOver ${level_bed} ${hgTohg}.over.chain.gz ${params.levelTag}.lift.bed unmapped
 
       echo -r"Liftover using:\\nwget http://hgdownload.cse.ucsc.edu/goldenPath/${hg}/liftOver/${hgTohg}.over.chain.gz
-      liftOver ${exome_bed} ${hgTohg}.over.chain.gz ${params.exomeTag}.lift.bed unmapped" >> ${readme}
+      liftOver ${level_bed} ${hgTohg}.over.chain.gz ${params.levelTag}.lift.bed unmapped" >> ${readme}
       """
   }
 
-  process exome_bed_pr {
+  process level_bed_pr {
 
     label 'low_mem'
-    publishDir path: "${params.outDir}/exome/${params.exomeTag}", mode: "copy", overwrite: "true"
+    publishDir path: "${params.outDir}/${params.seqLevel}/${params.levelTag}", mode: "copy", overwrite: "true"
 
     input:
-    tuple file(fa), file(fai), file(dict) from fasta_dict_exome
-    tuple file(exome_lift), file(readme) from exome_bed_liftd
+    tuple file(fa), file(fai), file(dict) from fasta_dict_level
+    tuple file(level_lift), file(readme) from level_bed_liftd
 
     output:
-    file("${params.exomeTag}.bed.interval_list") into complete_exome
-    file("${params.exomeTag}.bed") into exome_biallgz
-    tuple file("${params.exomeTag}.bed.gz"), file("${params.exomeTag}.bed.gz.tbi") into gztbi_exome
+    file("${params.levelTag}.bed.interval_list") into complete_level
+    file("${params.levelTag}.bed") into level_biallgz
+    tuple file("${params.levelTag}.bed.gz"), file("${params.levelTag}.bed.gz.tbi") into gztbi_level
 
     script:
     """
-    ##must test if all chr in fasta are in exome, else manta cries
+    ##must test if all chr in fasta are in exome/panel, else manta cries
     ##must test if all regions are greater than length zero or strelka cries
     ##must test if all seq.dict chrs are in bed and only they or BedToIntervalList cries
-    perl -ane 'if(\$F[1] == \$F[2]){\$F[2]++;} if(\$F[0] !~m/^chrM/){print join("\\t", @F[0..\$#F]) . "\\n";}' ${exome_lift} | grep -v chrM | sed 's/chr//g' > tmp.bed
+    perl -ane 'if(\$F[1] == \$F[2]){\$F[2]++;} if(\$F[0] !~m/^chrM/){print join("\\t", @F[0..\$#F]) . "\\n";}' ${level_lift} | grep -v chrM | sed 's/chr//g' > tmp.bed
 
      grep @SQ ${dict} | cut -f2 | sed 's/SN://' | while read CHR; do
      TESTCHR=\$(awk -v chrs=\$CHR '\$1 == chrs' tmp.bed | wc -l)
@@ -464,70 +465,70 @@ if(params.exome){
     done >> tmp.dict.bed
 
     ##always make interval list so we are in line with fasta
-    picard BedToIntervalList I=tmp.dict.bed O=${params.exomeTag}.interval_list SD=${dict}
+    picard BedToIntervalList I=tmp.dict.bed O=${params.levelTag}.interval_list SD=${dict}
 
     ##BedToIntervalList (reason unknown) makes 1bp interval to 0bp interval, replace with original
-    perl -ane 'if(\$F[0]=~m/^@/){print \$_;next;} if(\$F[1] == \$F[2]){\$f=\$F[1]; \$f--; \$F[1]=\$f; print join("\\t", @F[0..\$#F]) . "\\n";} else{print \$_;}' ${params.exomeTag}.interval_list > ${params.exomeTag}.bed.interval_list
+    perl -ane 'if(\$F[0]=~m/^@/){print \$_;next;} if(\$F[1] == \$F[2]){\$f=\$F[1]; \$f--; \$F[1]=\$f; print join("\\t", @F[0..\$#F]) . "\\n";} else{print \$_;}' ${params.levelTag}.interval_list > ${params.levelTag}.bed.interval_list
 
     ##output BED
-    grep -v "@" ${params.exomeTag}.bed.interval_list | cut -f 1,2,3,5 > ${params.exomeTag}.bed
+    grep -v "@" ${params.levelTag}.bed.interval_list | cut -f 1,2,3,5 > ${params.levelTag}.bed
 
     ##tabix
-    bgzip -c ${params.exomeTag}.bed > ${params.exomeTag}.bed.gz
-    tabix ${params.exomeTag}.bed.gz
+    bgzip -c ${params.levelTag}.bed > ${params.levelTag}.bed.gz
+    tabix ${params.levelTag}.bed.gz
     """
   }
 
-  process exome_biall {
+  process level_biall {
 
     label 'low_mem'
-    publishDir path: "${params.outDir}/exome/${params.exomeTag}", mode: "copy"
+    publishDir path: "${params.outDir}/${params.seqLevel}/${params.levelTag}", mode: "copy"
 
     input:
-    file(exome_bed) from exome_biallgz
-    file(gnomad) from exome_biall_gnomad
-    tuple file(fasta), file(fai) from fasta_exome_biall
+    file(level_bed) from level_biallgz
+    file(gnomad) from level_biall_gnomad
+    tuple file(fasta), file(fai) from fasta_level_biall
 
     output:
-    tuple file("af-only-gnomad.${params.exomeTag}.${hg}.noChr.vcf.gz"), file("af-only-gnomad.${params.exomeTag}.${hg}.noChr.vcf.gz.tbi") into exome_biallelicgz
-    file("exome.biall.bed") into exome_pcgr_toml
+    tuple file("af-only-gnomad.${params.levelTag}.${hg}.noChr.vcf.gz"), file("af-only-gnomad.${params.levelTag}.${hg}.noChr.vcf.gz.tbi") into level_biallelicgz
+    file("biall.bed") into level_pcgr_toml
 
     script:
     hg = params.assembly == "GRCh37" ? "hg19" : "hg38"
     if( params.assembly == "GRCh37" )
       """
-      cut -f 1,2,3 ${exome_bed} > exome.biall.bed
+      cut -f 1,2,3 ${level_bed} > biall.bed
       bgzip ${gnomad}
       tabix ${gnomad}.gz
       gunzip -c ${gnomad}.gz |
-      bcftools view -R exome.biall.bed ${gnomad}.gz | bcftools sort -T '.' > af-only-gnomad.exomerh.${hg}.noChr.vcf
-      perl ${workflow.projectDir}/bin/reheader_vcf_fai.pl af-only-gnomad.exomerh.hg19.noChr.vcf ${fai} > af-only-gnomad.${params.exomeTag}.${hg}.noChr.vcf
-      bgzip af-only-gnomad.${params.exomeTag}.${hg}.noChr.vcf
-      tabix af-only-gnomad.${params.exomeTag}.${hg}.noChr.vcf.gz
+      bcftools view -R biall.bed ${gnomad}.gz | bcftools sort -T '.' > af-only-gnomad.rh.${hg}.noChr.vcf
+      perl ${workflow.projectDir}/bin/reheader_vcf_fai.pl af-only-gnomad.rh.hg19.noChr.vcf ${fai} > af-only-gnomad.${params.levelTag}.${hg}.noChr.vcf
+      bgzip af-only-gnomad.${params.levelTag}.${hg}.noChr.vcf
+      tabix af-only-gnomad.${params.levelTag}.${hg}.noChr.vcf.gz
       """
     else
       """
-      cut -f 1,2,3 ${exome_bed} > exome.biall.bed
+      cut -f 1,2,3 ${level_bed} > biall.bed
       gunzip -c ${gnomad} | sed 's/chr//' | bgzip > af-only-gnomad.${hg}.noChr.vcf.gz
       tabix af-only-gnomad.${hg}.noChr.vcf.gz
-      bcftools view -R exome.biall.bed af-only-gnomad.${hg}.noChr.vcf.gz | bcftools sort -T '.' > af-only-gnomad.exomerh.${hg}.noChr.vcf
-      perl ${workflow.projectDir}/bin/reheader_vcf_fai.pl af-only-gnomad.exomerh.${hg}.noChr.vcf ${fai} > af-only-gnomad.${params.exomeTag}.${hg}.noChr.vcf
-      bgzip af-only-gnomad.${params.exomeTag}.${hg}.noChr.vcf
-      tabix af-only-gnomad.${params.exomeTag}.${hg}.noChr.vcf.gz
+      bcftools view -R biall.bed af-only-gnomad.${hg}.noChr.vcf.gz | bcftools sort -T '.' > af-only-gnomad.rh.${hg}.noChr.vcf
+      perl ${workflow.projectDir}/bin/reheader_vcf_fai.pl af-only-gnomad.rh.${hg}.noChr.vcf ${fai} > af-only-gnomad.${params.levelTag}.${hg}.noChr.vcf
+      bgzip af-only-gnomad.${params.levelTag}.${hg}.noChr.vcf
+      tabix af-only-gnomad.${params.levelTag}.${hg}.noChr.vcf.gz
       """
   }
 
-  //exome-specific toml
-  process pcgr_toml_exome {
+  //level-specific toml
+  process pcgr_toml_level {
 
     label 'low_mem'
-    publishDir "${params.outDir}/exome/${params.exomeTag}", mode: "copy"
+    publishDir "${params.outDir}/${params.seqLevel}/${params.levelTag}", mode: "copy"
 
     input:
-    file(exomebed) from exome_pcgr_toml
+    file(levelbed) from level_pcgr_toml
 
     output:
-    file("pcgr_configuration_${params.exomeTag}.toml") into exome_tomlo
+    file("pcgr_configuration_${params.levelTag}.toml") into level_tomlo
 
     when:
     params.pcgrdata
@@ -536,7 +537,7 @@ if(params.exome){
     """
     sh ${workflow.projectDir}/bin/pcgr_edit_toml.sh \
       ${params.outDir}/pcgr/data/${params.assemblylc}/pcgr_configuration_default.toml \
-      ${exomebed} ${params.exomeTag}
+      ${levelbed} ${params.levelTag}
     """
   }
 }
@@ -676,7 +677,7 @@ if(!file("$params.outDir/pcgr").exists()){
     file('data') into pcgrdata
 
     script:
-    exometag = params.exomeTag == null ? "" : "${params.exomeTag}"
+    levelTag = params.levelTag == null ? "" : "${params.levelTag}"
     """
     tar -xf ${tgz} -C ./
 

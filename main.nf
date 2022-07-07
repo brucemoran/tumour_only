@@ -34,7 +34,7 @@ def helpMessage() {
 
     --scatGath      [int]       Number of pieces to divide intervalList into for
                                 scattering to variant calling processes
-                                (default: 20 for exome, 100 for WGS)
+                                (default: 20 for exome/panel, 100 for WGS)
 
     --sampleCat     [str]       File used when fastq data is in multiple files
                                 which are cat'ed; replaces --sampleCsv; headers:
@@ -45,9 +45,11 @@ def helpMessage() {
     --multiqcConfig [str]       Config file for multiqc
                                 (default: bin/tumour_only.multiQC_config.yaml)
 
-    --seqLevel      [str]       WGS or exome (default: WGS)
+    --seqLevel      [str]       WGS (default), exome or panel; used to tag output
+                                and for specifying which reference data to use
 
-    --exomeTag      [str]       Tag used for exome kit when running download-references.nf
+    --levelTag      [str]       Tag used for exome/panel kit when running
+                                download-references.nf
 
     """.stripIndent()
 }
@@ -79,8 +81,8 @@ if(!params.email){
     exit 1, "Please include --email your@email.com"
 }
 
-if(params.seqLevel == "exome" && params.exomeTag == null){
-    exit 1, "Please define --exomeTag when using --seqLevel exome"
+if(params.seqLevel != "WGS" && params.levelTag == null){
+    exit 1, "Please define --levelTag when using --seqLevel exome/panel"
 }
 //Global Variables based on input
 params.outDir = "${params.seqLevel}_output"
@@ -115,15 +117,16 @@ reference.pcgrbase = Channel.value(file(params.genomes[params.assembly].pcgr))
 reference.pathseq = Channel.value(file(params.genomes[params.assembly].pathseq))
 reference.refflat = Channel.value(file(params.genomes[params.assembly].refflat))
 
-//if seqlevel is exome, there is a dir per exome already parsed according to exomeTag
-reference.seqlevel = params.seqlevel == "wgs" ? Channel.value(file(params.genomes[params.assembly].wgs)) : Channel.value(file(params.genomes[params.assembly].exome))
+//if seqlevel is not WGS, there is a params.genomes dir per exome or panel
+//holding a levelTag dir which we need to specify
+reference.seqlevel = Channel.value(file(params.genomes[params.assembly].params.seqlevel))
 
 //set cosmic
 reference.cosmic = params.cosmic == true ? Channel.value(file(params.genomes[params.assembly].cosmic)) : null
 
-//setting of intlist, bed based on seqlevel and exomeTag
-reference.intlist = params.seqlevel == "wgs" ? Channel.fromPath("${params.refDir}/${params.assembly}/${params.seqlevel}/wgs.bed.interval_list").getVal() : Channel.fromPath("${params.refDir}/${params.assembly}/${params.seqlevel}/${params.exomeTag}/${params.exomeTag}.bed.interval_list").getVal()
-reference.bed = params.seqlevel == "wgs" ? Channel.fromPath("${params.refDir}/${params.assembly}/${params.seqlevel}/wgs.bed").getVal() : Channel.fromPath("${params.refDir}/${params.assembly}/${params.seqlevel}/${params.exomeTag}/${params.exomeTag}.bed").getVal()
+//setting of intlist, bed based on seqlevel and levelTag
+reference.intlist = params.seqlevel == "wgs" ? Channel.fromPath("${params.refDir}/${params.assembly}/${params.seqlevel}/wgs.bed.interval_list").getVal() : Channel.fromPath("${params.refDir}/${params.assembly}/${params.seqlevel}/${params.levelTag}/${params.levelTag}.bed.interval_list").getVal()
+reference.bed = params.seqlevel == "wgs" ? Channel.fromPath("${params.refDir}/${params.assembly}/${params.seqlevel}/wgs.bed").getVal() : Channel.fromPath("${params.refDir}/${params.assembly}/${params.seqlevel}/${params.levelTag}/${params.levelTag}.bed").getVal()
 
 /*
 ================================================================================
@@ -188,6 +191,7 @@ process bbduk {
   tuple val(sampleID), val(meta), file('*.bbduk.R1.fastq.gz'), file('*.bbduk.R2.fastq.gz') into bwa_memming
   tuple val(sampleID), val(meta), file('*.bbduk.R1.fastq.gz'), file('*.bbduk.R2.fastq.gz'), file(read1), file(read2) into fastping
   tuple val(sampleID), val(meta), file(read1), file(read2) into fastqcing
+  tuple vale(sampleID), val(meta) into pcgr_meta
 
   script:
   def taskmem = task.memory == null ? "" : "-Xmx" + javaTaskmem("${task.memory}")
@@ -415,7 +419,7 @@ process Scat_gath {
   script:
   def sgcount = params.scatGath
   if (params.scatGath == null){
-    if (params.seqlevel == "exome"){
+    if (params.seqlevel != "wgs"){
       sgcount = 20
     }
     else {
@@ -564,7 +568,7 @@ process cpsrreport {
 
   output:
   file('*') into cpsr_vcfs
-  file("${metaid}.cpsr.${grchv}.html") into sendmail_cpsr
+  tuple file("${metaid}.cpsr.${grchv}.html"), file("${metaid}.cpsr.${grchv}.json.gz") into sendmail_cpsr
 
   script:
   grchv = "${grchver}".split("\\/")[-1]
@@ -607,7 +611,7 @@ process Multi_met {
   def taskmem = task.memory == null ? "" : "-Xmx" + javaTaskmem("${task.memory}")
   """
   {
-  if [[ ${params.seqlevel} == "exome" ]]; then
+  if [[ ${params.seqlevel} != "wgs" ]]; then
   picard ${taskmem} CollectHsMetrics \
     I=${bam} \
     O=${sampleID}".hs_metrics.txt" \
@@ -795,7 +799,7 @@ process M2_con_filt {
   script:
   def taskmem = task.memory == null ? "" : "--java-options \"-Xmx" + javaTaskmem("${task.memory}") + "\""
   hg = params.assembly == "GRCh37" ? "hg19" : "hg38"
-  gpsgz = params.seqlevel == "exome" ? "${gps_files}/${params.exomeTag}/af-only-gnomad.${params.exomeTag}.${hg}.noChr.vcf.gz" : "${gps_files}/af-only-gnomad.wgs.${hg}.noChr.vcf.gz"
+  gpsgz = params.seqlevel != "wgs" ? "${gps_files}/${params.levelTag}/af-only-gnomad.${params.levelTag}.${hg}.noChr.vcf.gz" : "${gps_files}/af-only-gnomad.wgs.${hg}.noChr.vcf.gz"
   """
   gatk ${taskmem} \
     GetPileupSummaries \
@@ -939,6 +943,13 @@ process vepann {
 
 // 3.3 PCGR report
 // take all mutations in consensus.tab from pass.vcfs into single VCF for PCGR
+
+runPCGR.
+  .join(pcgr_meta)
+  .groupTuple()
+  .map { it -> [it[0], it[1], it[2]].flatten() }
+  .set { run_pcgr_meta }
+
 process pcgrreport {
 
   label 'low_mem'
@@ -949,34 +960,48 @@ process pcgrreport {
   publishDir "${params.outDir}/samples/${sampleID}/pcgr", mode: "copy"
 
   input:
-  tuple val(sampleID), file(vcf) from runPCGR
+  tuple val(sampleID), file(vcf), val(meta) from run_pcgr_meta
   file(grchver) from reference.grchvers
   file(pcgrbase) from reference.pcgrbase
-  file(exomebase) from reference.seqlevel
+  file(levelbase) from reference.seqlevel
 
   output:
   file('*') into completed_pcgr
-  file("${sampleID}.pcgr_acmg.${grch_vers}.html") into sendmail_pcgr
+  tuple file("${metaid}.pcgr_acmg.${grch_vers}.html"), file("${metaid}.pcgr_acmg.${grch_vers}.json.gz") into sendmail_pcgr
 
   script:
   grch_vers = "${grchver}".split("\\/")[-1]
-  config = params.seqlevel == "exome" ? "${exomebase}/${params.exomeTag}/pcgr_configuration_${params.exomeTag}.toml" : "${pcgrbase}/data/${grch_vers}/pcgr_configuration_default.toml"
-  assay = params.seqlevel == "exome" ? "WES" : "WGS"
+  config = params.seqlevel != "wgs" ? "${levelbase}/${params.levelTag}/pcgr_configuration_${params.levelTag}.toml" : "${pcgrbase}/data/${grch_vers}/pcgr_configuration_default.toml"
+  metaid = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
   """
   {
+  if [[ ${params.seqlevel} == "wgs" ]]; then
+    ASSAY = "WGS";
+  fi
+  if [[ ${params.seqlevel} == "exome" ]]; then
+    ASSAY = "WES";
+  fi
+  if [[ ${params.seqlevel} == "panel" ]]; then
+    ASSAY = "TARGETED";
+  fi
+
   ##PCGR 0.9.1
   pcgr.py \
     --pcgr_dir ${pcgrbase} \
     --output_dir ./ \
     --genome_assembly ${grch_vers} \
     --conf ${config} \
-    --sample_id ${sampleID} \
+    --sample_id ${metaid} \
     --input_vcf ${vcf} \
     --no-docker \
     --force_overwrite \
     --no_vcf_validate \
+    --tumor_only \
     --include_trials \
-    --assay ${assay}
+    --assay \$ASSAY \
+    --estimate_tmb \
+    --estimate_msi_status \
+    --tmb_algorithm all_coding
 
   } 2>&1 | tee > ${sampleID}.pcgr.log.txt
   """
@@ -1064,7 +1089,8 @@ process zipup {
 
   script:
   """
-  mkdir html_reports && mv *html ./html_reports/
+  mkdir ${params.runID}/html_reports && mv *html ${params.runID}/html_reports/
+  mkdir ${params.runID}/json && mv *json ${params.runID}/json/
   if [[ \$(find ./ -maxdepth 0 | wc -l) > 1 ]]; then
     mkdir other && mv *.* ./other/
   fi
