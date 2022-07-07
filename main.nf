@@ -944,7 +944,7 @@ process vepann {
 // 3.3 PCGR report
 // take all mutations in consensus.tab from pass.vcfs into single VCF for PCGR
 
-runPCGR.
+runPCGR
   .join(pcgr_meta)
   .groupTuple()
   .map { it -> [it[0], it[1], it[2]].flatten() }
