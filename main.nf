@@ -973,18 +973,9 @@ process pcgrreport {
   grch_vers = "${grchver}".split("\\/")[-1]
   config = params.seqlevel != "wgs" ? "${levelbase}/${params.levelTag}/pcgr_configuration_${params.levelTag}.toml" : "${pcgrbase}/data/${grch_vers}/pcgr_configuration_default.toml"
   metaid = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
+  assay = params.seqlevel == "wgs" ? "WGS" : params.seqlevel == "exome" ? "WES" : "TARGETED"
   """
   {
-  if [[ ${params.seqlevel} == "wgs" ]]; then
-    ASSAY = "WGS";
-  fi
-  if [[ ${params.seqlevel} == "exome" ]]; then
-    ASSAY = "WES";
-  fi
-  if [[ ${params.seqlevel} == "panel" ]]; then
-    ASSAY = "TARGETED";
-  fi
-
   ##PCGR 0.9.1
   pcgr.py \
     --pcgr_dir ${pcgrbase} \
@@ -998,7 +989,7 @@ process pcgrreport {
     --no_vcf_validate \
     --tumor_only \
     --include_trials \
-    --assay \$ASSAY \
+    --assay ${assay} \
     --estimate_tmb \
     --estimate_msi_status \
     --tmb_algorithm all_coding
