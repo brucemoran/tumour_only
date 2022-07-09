@@ -1081,7 +1081,7 @@ process zipup {
   script:
   """
   mkdir -p ${params.runID}/html_reports && mv *html ${params.runID}/html_reports/
-  mkdir -p ${params.runID}/json && mv *json ${params.runID}/json/
+  mkdir -p ${params.runID}/json && mv *json.gz ${params.runID}/json/
   if [[ \$(find ./ -maxdepth 0 | wc -l) > 1 ]]; then
     mkdir other && mv *.* ./other/
   fi
