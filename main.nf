@@ -974,8 +974,10 @@ process pcgrreport {
   config = params.seqlevel != "wgs" ? "${levelbase}/${params.levelTag}/pcgr_configuration_${params.levelTag}.toml" : "${pcgrbase}/data/${grch_vers}/pcgr_configuration_default.toml"
   metaid = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
   assay = params.seqlevel == "wgs" ? "WGS" : params.seqlevel == "exome" ? "WES" : "TARGETED"
+  tmb_msi = params.seqlevel == "panel" ? "" : "--estimate_tmb --estimate_msi_status --tmb_algorithm all_coding"
   """
   {
+
   ##PCGR 0.9.1
   pcgr.py \
     --pcgr_dir ${pcgrbase} \
@@ -989,10 +991,7 @@ process pcgrreport {
     --no_vcf_validate \
     --tumor_only \
     --include_trials \
-    --assay ${assay} \
-    --estimate_tmb \
-    --estimate_msi_status \
-    --tmb_algorithm all_coding
+    --assay ${assay} ${tmb_msi}
 
   } 2>&1 | tee > ${sampleID}.pcgr.log.txt
   """
@@ -1028,40 +1027,24 @@ process MultiQC {
 }
 
 // 4.1.1: container software versions
-process somenone_software_vers {
+process software_vers {
 
   label 'low_mem'
   publishDir "pipeline_info", mode: 'copy'
   publishDir path: "${params.outDir}/reports/software_vers", mode: "copy"
 
   output:
-  file 'somenone_software_versions.yaml' into ch_somenone_software_vers
+  file('*') into ch_software_vers
 
   script:
   """
   conda env export > somenone_software_versions.yaml
-  """
-}
-
-//4.1.3: pcgr software version numbers
-//out of use as using Docker from pcgr now
-process pcgr_software_vers {
-
-  label 'low_mem'
-  publishDir "${params.outDir}/pipeline_info", mode: 'copy'
-
-  output:
-  file 'pcgr_software_versions.txt' into ch_pcgr_software_vers
-
-
-  script:
-  """
   pcgr.py --version > pcgr_software_versions.txt
   cpsr.py --version >> pcgr_software_versions.txt
   """
 }
 
-// 4.19: ZIP for sending on sendmail
+// 4.2: ZIP for sending on sendmail
 
 sendmail_pcgr
   .mix(sendmail_cpsr)
@@ -1089,7 +1072,7 @@ process zipup {
   """
 }
 
-// 4.2: Completion e-mail notification
+// 4.3: Completion e-mail notification
 
 workflow.onComplete {
   sleep(1000)
