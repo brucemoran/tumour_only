@@ -558,7 +558,7 @@ process cpsrreport {
 
   label 'med_mem'
 
-  publishDir "${params.outDir}/reports/cpsr", mode: "copy", pattern: "*.html"
+  publishDir "${params.outDir}/reports/cpsr", mode: "copy", pattern: "${metaid}.cpsr.${grchv}.{html,json.gz}"
   publishDir "${params.outDir}/samples/${sampleID}/cpsr", mode: "copy", pattern: "*[!.html]"
 
   input:
@@ -568,7 +568,7 @@ process cpsrreport {
 
   output:
   file('*') into cpsr_vcfs
-  tuple file("${metaid}.cpsr.${grchv}.html"), file("${metaid}.cpsr.${grchv}.json.gz") into sendmail_cpsr
+  file("${metaid}.cpsr.${grchv}.html") into sendmail_cpsr
 
   script:
   grchv = "${grchver}".split("\\/")[-1]
@@ -956,7 +956,7 @@ process pcgrreport {
   errorStrategy 'retry'
   maxRetries 3
 
-  publishDir "${params.outDir}/reports/pcgr", mode: "copy", pattern: "${sampleID}.pcgr_acmg.${grch_vers}.html"
+  publishDir "${params.outDir}/reports/pcgr", mode: "copy", pattern: "${sampleID}.pcgr_acmg.${grch_vers}.{html,json.gz}"
   publishDir "${params.outDir}/samples/${sampleID}/pcgr", mode: "copy"
 
   input:
@@ -1064,11 +1064,10 @@ process zipup {
   script:
   """
   mkdir -p ${params.runID}/html_reports && mv *html ${params.runID}/html_reports/
-  mkdir -p ${params.runID}/json && mv *json.gz ${params.runID}/json/
   if [[ \$(find ./ -maxdepth 0 | wc -l) > 1 ]]; then
     mkdir other && mv *.* ./other/
   fi
-  zip -r ${params.runID}.tumour_only.zip *
+  zip -r ${params.runID}.tumour_only.zip ${params.runID}/html_reports
   """
 }
 
