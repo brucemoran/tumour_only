@@ -576,10 +576,10 @@ process cpsrreport {
   """
   {
   ##count sample_id as cannot be less than 3
-  WCC=\$(echo ${metaid} |tr -d '\n' | wc -c)
+  WCC=\$(echo ${metaid} | tr -d '\\n' | wc -c)
   if(\$WCC>3){
     METAID="${metaid}_"
-  } else{
+  } else {
     METAID=${metaid}
   }
   ##CPSR v0.6.1
@@ -985,10 +985,10 @@ process pcgrreport {
   """
   {
   ##count sample_id as cannot be less than 3
-  WCC=\$(echo ${metaid} |tr -d '\n' | wc -c)
+  WCC=\$(echo ${metaid} |tr -d '\\n' | wc -c)
   if(\$WCC>3){
     METAID="${metaid}_"
-  } else{
+  } else {
     METAID=${metaid}
   }
   ##PCGR 0.9.1
