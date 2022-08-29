@@ -575,6 +575,13 @@ process cpsrreport {
   metaid = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
   """
   {
+  ##count sample_id as cannot be less than 3
+  WCC=\$(echo ${metaid} |tr -d '\n' | wc -c)
+  if(\$WCC>3){
+    METAID="${metaid}_"
+  } else{
+    METAID=${metaid}
+  }
   ##CPSR v0.6.1
   cpsr.py \
     --no-docker \
@@ -585,7 +592,7 @@ process cpsrreport {
     --output_dir ./ \
     --genome_assembly ${grchv} \
     --conf ${pcgrbase}/data/${grchv}/cpsr_configuration_default.toml \
-    --sample_id ${metaid}
+    --sample_id \$METAID
   } 2>&1 | tee > ${sampleID}.cpsr.log.txt
   """
 }
@@ -977,14 +984,20 @@ process pcgrreport {
   tmb_msi = params.seqlevel == "panel" ? "" : "--estimate_tmb --estimate_msi_status --tmb_algorithm all_coding"
   """
   {
-
+  ##count sample_id as cannot be less than 3
+  WCC=\$(echo ${metaid} |tr -d '\n' | wc -c)
+  if(\$WCC>3){
+    METAID="${metaid}_"
+  } else{
+    METAID=${metaid}
+  }
   ##PCGR 0.9.1
   pcgr.py \
     --pcgr_dir ${pcgrbase} \
     --output_dir ./ \
     --genome_assembly ${grch_vers} \
     --conf ${config} \
-    --sample_id ${metaid} \
+    --sample_id \$METAID \
     --input_vcf ${vcf} \
     --no-docker \
     --force_overwrite \
