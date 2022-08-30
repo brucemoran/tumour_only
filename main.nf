@@ -568,7 +568,7 @@ process cpsrreport {
 
   output:
   file('*') into cpsr_vcfs
-  file("${metaid}.cpsr.${grchv}.html") into sendmail_cpsr
+  file('*.cpsr.${grchv}.html') into sendmail_cpsr
 
   script:
   grchv = "${grchver}".split("\\/")[-1]
@@ -972,7 +972,7 @@ process pcgrreport {
 
   output:
   file('*') into completed_pcgr
-  tuple file("${metaid}.pcgr_acmg.${grch_vers}.html"), file("${metaid}.pcgr_acmg.${grch_vers}.json.gz") into sendmail_pcgr
+  tuple file('*.pcgr_acmg.${grch_vers}.html'), file('*.pcgr_acmg.${grch_vers}.json.gz') into sendmail_pcgr
 
   script:
   grch_vers = "${grchver}".split("\\/")[-1]
