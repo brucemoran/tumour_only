@@ -577,11 +577,9 @@ process cpsrreport {
   {
   ##count sample_id as cannot be less than 3
   WCC=\$(echo ${metaid} | tr -d '\\n' | wc -c)
-  if(\$WCC>3){
-    METAID="${metaid}_"
-  } else {
-    METAID=${metaid}
-  }
+  if (( \$WCC < 3 )); then METAID="_${metaid}";
+  else METAID=${metaid}; fi
+
   ##CPSR v0.6.1
   cpsr.py \
     --no-docker \
@@ -985,12 +983,10 @@ process pcgrreport {
   """
   {
   ##count sample_id as cannot be less than 3
-  WCC=\$(echo ${metaid} |tr -d '\\n' | wc -c)
-  if(\$WCC>3){
-    METAID="${metaid}_"
-  } else {
-    METAID=${metaid}
-  }
+  WCC=\$(echo ${metaid} | tr -d '\\n' | wc -c)
+  if (( \$WCC < 3 )); then METAID="_${metaid}";
+  else METAID=${metaid}; fi
+
   ##PCGR 0.9.1
   pcgr.py \
     --pcgr_dir ${pcgrbase} \
