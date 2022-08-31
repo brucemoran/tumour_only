@@ -28,6 +28,8 @@ def helpMessage() {
     --assembly      [str]       Either GRCh37 or GRCh38 (default), as per
                                 download-references.nf
 
+    --outDir        [str]       Path to send outputs (default: ./)
+
     --email         [str]       Email address to send reports
 
   General Optional Arguments:
@@ -85,7 +87,7 @@ if(params.seqLevel != "WGS" && params.levelTag == null){
     exit 1, "Please define --levelTag when using --seqLevel exome/panel"
 }
 //Global Variables based on input
-params.outDir = "${params.seqLevel}_output"
+params.outdir = "${params.outDir}/${params.seqLevel}_output"
 params.seqlevel = "${params.seqLevel}".toLowerCase()
 
 //Java task memory allocation via task.memory
@@ -151,7 +153,7 @@ if(params.sampleCat){
   process Samplecat {
 
     label 'low_mem'
-    publishDir "${params.outDir}/samples/${sampleID}/cat", mode: "copy"
+    publishDir "${params.outdir}/samples/${sampleID}/cat", mode: "copy"
 
     input:
     tuple val(sampleID), val(meta), val(dir), val(ext) from samplecating
@@ -181,7 +183,7 @@ if(params.sampleCat){
 process bbduk {
 
   label 'med_mem'
-  publishDir path: "${params.outDir}/samples/${sampleID}/bbduk", mode: "copy", pattern: "*.txt"
+  publishDir path: "${params.outdir}/samples/${sampleID}/bbduk", mode: "copy", pattern: "*.txt"
 
   input:
   tuple val(sampleID), val(meta), file(read1), file(read2) from bbduking
@@ -222,7 +224,7 @@ process bbduk {
 process fastp {
 
   label 'low_mem'
-  publishDir "${params.outDir}/samples/${sampleID}/fastp", mode: "copy", pattern: "*.html"
+  publishDir "${params.outdir}/samples/${sampleID}/fastp", mode: "copy", pattern: "*.html"
 
   input:
   tuple val(sampleID), val(meta), file(preread1), file(preread2), file(postread1), file(postread2) from fastping
@@ -243,7 +245,7 @@ process fastp {
 process fastqc {
 
   label 'low_mem'
-  publishDir "${params.outDir}/samples/${sampleID}/fastqc", mode: "copy", pattern: "*.html"
+  publishDir "${params.outdir}/samples/${sampleID}/fastqc", mode: "copy", pattern: "*.html"
 
   input:
   tuple val(sampleID), val(meta), file(read1), file(read2) from fastqcing
@@ -299,7 +301,7 @@ process bwamem {
 process Cram {
 
   label 'low_mem'
-  publishDir path: "${params.outDir}/samples/${sampleID}/bwa", mode: "copy", pattern: "*.cra*"
+  publishDir path: "${params.outdir}/samples/${sampleID}/bwa", mode: "copy", pattern: "*.cra*"
 
   input:
   tuple val(sampleID), val(meta), file(bam), file(bai) from cramming
@@ -320,7 +322,7 @@ process Cram {
 process Mrkdup {
 
   label 'high_mem'
-  publishDir path: "${params.outDir}/samples/${sampleID}/picard", mode: "copy", pattern: "*.txt"
+  publishDir path: "${params.outdir}/samples/${sampleID}/picard", mode: "copy", pattern: "*.txt"
 
   input:
   tuple val(sampleID), val(meta), file(bam), file(bai) from dup_marking
@@ -357,7 +359,7 @@ process Mrkdup {
 process Gtkrcl {
 
   label 'high_mem'
-  publishDir path: "${params.outDir}/samples/${sampleID}/gatk4/bestpractice", mode: "copy", pattern: "*.GATK4_BQSR.log.txt "
+  publishDir path: "${params.outdir}/samples/${sampleID}/gatk4/bestpractice", mode: "copy", pattern: "*.GATK4_BQSR.log.txt "
 
   input:
   tuple val(sampleID), val(meta), file(bam), file(bai) from gatk4recaling
@@ -536,7 +538,7 @@ hc_gt
 process Hc_merge {
 
   label 'high_mem'
-  publishDir path: "${params.outDir}/samples/${sampleID}/haplotypecaller", mode: "copy", pattern: '*.vcf.*'
+  publishDir path: "${params.outdir}/samples/${sampleID}/haplotypecaller", mode: "copy", pattern: '*.vcf.*'
 
   input:
   tuple val(sampleID), val(meta), file(rawvcfs) from hc_fm
@@ -558,8 +560,8 @@ process cpsrreport {
 
   label 'med_mem'
 
-  publishDir "${params.outDir}/reports/cpsr", mode: "copy", pattern: "${metaid}.cpsr.${grchv}.{html,json.gz}"
-  publishDir "${params.outDir}/samples/${sampleID}/cpsr", mode: "copy", pattern: "*[!.html]"
+  publishDir "${params.outdir}/reports/cpsr", mode: "copy", pattern: "${metaid}.cpsr.${grchv}.{html,json.gz}"
+  publishDir "${params.outdir}/samples/${sampleID}/cpsr", mode: "copy", pattern: "*[!.html]"
 
   input:
   tuple val(sampleID), val(meta), file(vcf), file(tbi) from cpsr_vcf
@@ -605,7 +607,7 @@ process Multi_met {
 
   label 'low_mem'
 
-  publishDir "${params.outDir}/samples/${sampleID}/metrics", mode: "copy"
+  publishDir "${params.outdir}/samples/${sampleID}/metrics", mode: "copy"
 
   input:
   tuple val(sampleID), file(bam), file(bai) from gmultimetricing
@@ -792,7 +794,7 @@ process M2_con_filt {
 
   label 'med_mem'
 
-  publishDir path: "${params.outDir}/samples/${sampleID}/mutect2", mode: "copy", overwrite: true
+  publishDir path: "${params.outdir}/samples/${sampleID}/mutect2", mode: "copy", overwrite: true
 
   input:
   tuple val(sampleID), file(tumourbam), file(tumourbai), file(mergevcf), file(statsvcf), file(readorient) from mutect2_stats_merge
@@ -862,7 +864,7 @@ process vepHC {
 
   label 'low_mem'
 
-  publishDir path: "${params.outDir}/samples/${sampleID}/haplotypecaller", mode: "copy"
+  publishDir path: "${params.outdir}/samples/${sampleID}/haplotypecaller", mode: "copy"
 
   input:
   tuple val(sampleID), val(meta), file(vcf), file(tbi) from vep_hc_vcf
@@ -906,7 +908,7 @@ process vepann {
 
   label 'med_mem'
 
-  publishDir path: "${params.outDir}/samples/${sampleID}/mutect2", mode: "copy", pattern: "${sampleID}.mutect2.snv_indel.pass.vep.vcf"
+  publishDir path: "${params.outdir}/samples/${sampleID}/mutect2", mode: "copy", pattern: "${sampleID}.mutect2.snv_indel.pass.vep.vcf"
 
   input:
   tuple val(sampleID), file(vcf) from mutect2_veping
@@ -966,8 +968,8 @@ process pcgrreport {
   errorStrategy 'retry'
   maxRetries 3
 
-  publishDir "${params.outDir}/reports/pcgr", mode: "copy", pattern: "${sampleID}.pcgr_acmg.${grch_vers}.{html,json.gz}"
-  publishDir "${params.outDir}/samples/${sampleID}/pcgr", mode: "copy"
+  publishDir "${params.outdir}/reports/pcgr", mode: "copy", pattern: "${sampleID}.pcgr_acmg.${grch_vers}.{html,json.gz}"
+  publishDir "${params.outdir}/samples/${sampleID}/pcgr", mode: "copy"
 
   input:
   tuple val(sampleID), file(vcf), val(meta) from run_pcgr_meta
@@ -1025,7 +1027,7 @@ process pcgrreport {
 process MultiQC {
 
   label 'low_mem'
-  publishDir path: "${params.outDir}/reports/multiQC", mode: "copy"
+  publishDir path: "${params.outdir}/reports/multiQC", mode: "copy"
 
   input:
   file(fastps) from fastp_multiqc.collect()
@@ -1050,7 +1052,7 @@ process software_vers {
 
   label 'low_mem'
   publishDir "pipeline_info", mode: 'copy'
-  publishDir path: "${params.outDir}/reports/software_vers", mode: "copy"
+  publishDir path: "${params.outdir}/reports/software_vers", mode: "copy"
 
   output:
   file('*') into ch_software_vers
