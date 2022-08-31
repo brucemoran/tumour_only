@@ -568,7 +568,7 @@ process cpsrreport {
 
   output:
   file('*') into cpsr_vcfs
-  file('*.cpsr.${grchv}.html') into sendmail_cpsr
+  file("${metaid}.cpsr.${grchv}.html") into sendmail_cpsr
 
   script:
   grchv = "${grchver}".split("\\/")[-1]
@@ -592,6 +592,11 @@ process cpsrreport {
     --conf ${pcgrbase}/data/${grchv}/cpsr_configuration_default.toml \
     --sample_id \$METAID
   } 2>&1 | tee > ${sampleID}.cpsr.log.txt
+
+  for x in \$(ls \$METAID*); do
+    nm=\$(echo \$x | sed "s/\$METAID/${metaid}/')
+    mv \$x \$nm
+  done
   """
 }
 
@@ -972,7 +977,7 @@ process pcgrreport {
 
   output:
   file('*') into completed_pcgr
-  tuple file('*.pcgr_acmg.${grch_vers}.html'), file('*.pcgr_acmg.${grch_vers}.json.gz') into sendmail_pcgr
+  tuple file("${metaid}.pcgr_acmg.${grch_vers}.html"), file("${metaid}.pcgr_acmg.${grch_vers}.json.gz") into sendmail_pcgr
 
   script:
   grch_vers = "${grchver}".split("\\/")[-1]
@@ -1001,6 +1006,11 @@ process pcgrreport {
     --tumor_only \
     --include_trials \
     --assay ${assay} ${tmb_msi}
+
+  for x in \$(ls \$METAID*); do
+    nm=\$(echo \$x | sed "s/\$METAID/${metaid}/')
+    mv \$x \$nm
+  done
 
   } 2>&1 | tee > ${sampleID}.pcgr.log.txt
   """
