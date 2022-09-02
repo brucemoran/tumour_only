@@ -596,7 +596,7 @@ process cpsrreport {
   } 2>&1 | tee > ${sampleID}.cpsr.log.txt
 
   for x in \$(ls \$METAID*); do
-    nm=\$(echo \$x | sed "s/\$METAID/${metaid}/')
+    nm=\$(echo \$x | sed "s/\$METAID/${metaid}/")
     mv \$x \$nm
   done
   """
@@ -1010,7 +1010,7 @@ process pcgrreport {
     --assay ${assay} ${tmb_msi}
 
   for x in \$(ls \$METAID*); do
-    nm=\$(echo \$x | sed "s/\$METAID/${metaid}/')
+    nm=\$(echo \$x | sed "s/\$METAID/${metaid}/")
     mv \$x \$nm
   done
 
