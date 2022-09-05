@@ -28,8 +28,6 @@ def helpMessage() {
     --assembly      [str]       Either GRCh37 or GRCh38 (default), as per
                                 download-references.nf
 
-    --outDir        [str]       Path to send outputs (default: ./)
-
     --email         [str]       Email address to send reports
 
   General Optional Arguments:
@@ -560,7 +558,7 @@ process cpsrreport {
 
   label 'med_mem'
 
-  publishDir "${params.outdir}/reports/cpsr", mode: "copy", pattern: "${metaid}.cpsr.${grchv}.{html,json.gz}"
+  publishDir "${params.outdir}/reports/cpsr", mode: "copy", pattern: "${metad}.cpsr.${grchv}.{html,json.gz}"
   publishDir "${params.outdir}/samples/${sampleID}/cpsr", mode: "copy", pattern: "*[!.html]"
 
   input:
@@ -574,14 +572,10 @@ process cpsrreport {
 
   script:
   grchv = "${grchver}".split("\\/")[-1]
-  metaid = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
+  metad = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
+  def metaid = "${metad}".length() >= 2 ? "${metad}" : "_${metad}"
   """
   {
-  ##count sample_id as cannot be less than 3
-  WCC=\$(echo ${metaid} | tr -d '\\n' | wc -c)
-  if (( \$WCC < 3 )); then METAID="_${metaid}";
-  else METAID=${metaid}; fi
-
   ##CPSR v0.6.1
   cpsr.py \
     --no-docker \
@@ -592,13 +586,15 @@ process cpsrreport {
     --output_dir ./ \
     --genome_assembly ${grchv} \
     --conf ${pcgrbase}/data/${grchv}/cpsr_configuration_default.toml \
-    --sample_id \$METAID
+    --sample_id ${metaid}
   } 2>&1 | tee > ${sampleID}.cpsr.log.txt
 
-  for x in \$(ls \$METAID*); do
-    nm=\$(echo \$x | sed "s/\$METAID/${metaid}/")
-    mv \$x \$nm
-  done
+  if [[ ${metaid} =~ "_${metad}" ]]; then
+    for x in \$(ls ${metaid}*); do
+      nm=\$(echo \$x | sed "s/${metaid}/${metad}/")
+      mv \$x \$nm
+    done
+  fi
   """
 }
 
@@ -985,14 +981,34 @@ process pcgrreport {
   grch_vers = "${grchver}".split("\\/")[-1]
   config = params.seqlevel != "wgs" ? "${levelbase}/${params.levelTag}/pcgr_configuration_${params.levelTag}.toml" : "${pcgrbase}/data/${grch_vers}/pcgr_configuration_default.toml"
   metaid = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
-  assay = params.seqlevel == "wgs" ? "WGS" : params.seqlevel == "exome" ? "WES" : "TARGETED"
-  tmb_msi = params.seqlevel == "panel" ? "" : "--estimate_tmb --estimate_msi_status --tmb_algorithm all_coding"
+  def assay = params.seqlevel == "wgs" ? "WGS" : params.seqlevel == "exome" ? "WES" : "TARGETED"
+  def tmb_msi = params.seqlevel == "panel" ? "" : "--estimate_tmb --estimate_msi_status --tmb_algorithm all_coding"
+  grchv = "${grchver}".split("\\/")[-1]
+  metad = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
+  def metaid = "${metad}".length() >= 2 ? "${metad}" : "_${metad}"
   """
   {
-  ##count sample_id as cannot be less than 3
-  WCC=\$(echo ${metaid} | tr -d '\\n' | wc -c)
-  if (( \$WCC < 3 )); then METAID="_${metaid}";
-  else METAID=${metaid}; fi
+  ##CPSR v0.6.1
+  cpsr.py \
+    --no-docker \
+    --no_vcf_validate \
+    --panel_id 0 \
+    --query_vcf ${vcf} \
+    --pcgr_dir ${pcgrbase} \
+    --output_dir ./ \
+    --genome_assembly ${grchv} \
+    --conf ${pcgrbase}/data/${grchv}/cpsr_configuration_default.toml \
+    --sample_id ${metaid}
+  } 2>&1 | tee > ${sampleID}.cpsr.log.txt
+
+  if [[ ${metaid} =~ "_${metad}" ]]; then
+    for x in \$(ls ${metaid}*); do
+      nm=\$(echo \$x | sed "s/${metaid}/${metad}/")
+      mv \$x \$nm
+    done
+  fi
+  """
+  {
 
   ##PCGR 0.9.1
   pcgr.py \
@@ -1051,7 +1067,7 @@ process MultiQC {
 process software_vers {
 
   label 'low_mem'
-  publishDir "pipeline_info", mode: 'copy'
+  publishDir "${params.outdir}/pipeline_info", mode: 'copy'
   publishDir path: "${params.outdir}/reports/software_vers", mode: "copy"
 
   output:
