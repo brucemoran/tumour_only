@@ -981,35 +981,13 @@ process pcgrreport {
   grch_vers = "${grchver}".split("\\/")[-1]
   config = params.seqlevel != "wgs" ? "${levelbase}/${params.levelTag}/pcgr_configuration_${params.levelTag}.toml" : "${pcgrbase}/data/${grch_vers}/pcgr_configuration_default.toml"
   metaid = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
-  def assay = params.seqlevel == "wgs" ? "WGS" : params.seqlevel == "exome" ? "WES" : "TARGETED"
-  def tmb_msi = params.seqlevel == "panel" ? "" : "--estimate_tmb --estimate_msi_status --tmb_algorithm all_coding"
+  assay = params.seqlevel == "wgs" ? "WGS" : params.seqlevel == "exome" ? "WES" : "TARGETED"
+  tmb_msi = params.seqlevel == "panel" ? "" : "--estimate_tmb --estimate_msi_status --tmb_algorithm all_coding"
   grchv = "${grchver}".split("\\/")[-1]
   metad = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
   def metaid = "${metad}".length() >= 2 ? "${metad}" : "_${metad}"
   """
   {
-  ##CPSR v0.6.1
-  cpsr.py \
-    --no-docker \
-    --no_vcf_validate \
-    --panel_id 0 \
-    --query_vcf ${vcf} \
-    --pcgr_dir ${pcgrbase} \
-    --output_dir ./ \
-    --genome_assembly ${grchv} \
-    --conf ${pcgrbase}/data/${grchv}/cpsr_configuration_default.toml \
-    --sample_id ${metaid}
-  } 2>&1 | tee > ${sampleID}.cpsr.log.txt
-
-  if [[ ${metaid} =~ "_${metad}" ]]; then
-    for x in \$(ls ${metaid}*); do
-      nm=\$(echo \$x | sed "s/${metaid}/${metad}/")
-      mv \$x \$nm
-    done
-  fi
-  """
-  {
-
   ##PCGR 0.9.1
   pcgr.py \
     --pcgr_dir ${pcgrbase} \
@@ -1025,10 +1003,12 @@ process pcgrreport {
     --include_trials \
     --assay ${assay} ${tmb_msi}
 
-  for x in \$(ls \$METAID*); do
-    nm=\$(echo \$x | sed "s/\$METAID/${metaid}/")
-    mv \$x \$nm
-  done
+  if [[ ${metaid} =~ "_${metad}" ]]; then
+    for x in \$(ls ${metaid}*); do
+      nm=\$(echo \$x | sed "s/${metaid}/${metad}/")
+      mv \$x \$nm
+    done
+  fi
 
   } 2>&1 | tee > ${sampleID}.pcgr.log.txt
   """
