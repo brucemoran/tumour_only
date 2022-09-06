@@ -573,7 +573,7 @@ process cpsrreport {
   script:
   grchv = "${grchver}".split("\\/")[-1]
   def metad = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
-  def metaid = "${metad}".length() >= 2 ? "${metad}" : "_${metad}"
+  def metaid = "${metad}".length() > 2 ? "${metad}" : "_${metad}"
   """
   {
   ##CPSR v0.6.1
@@ -589,12 +589,10 @@ process cpsrreport {
     --sample_id ${metaid}
   } 2>&1 | tee > ${sampleID}.cpsr.log.txt
 
-  if [[ ${metaid} =~ "_${metad}" ]]; then
-    for x in \$(ls ${metaid}*); do
-      nm=\$(echo \$x | sed "s/${metaid}/${metad}/")
-      mv \$x \$nm
-    done
-  fi
+  for x in \$(ls ${metaid}*); do
+    nm=\$(echo \$x | sed "s/${metaid}/${metad}/")
+    mv \$x \$nm
+  done
   """
 }
 
@@ -984,7 +982,7 @@ process pcgrreport {
   tmb_msi = params.seqlevel == "panel" ? "" : "--estimate_tmb --estimate_msi_status --tmb_algorithm all_coding"
   grchv = "${grchver}".split("\\/")[-1]
   def metad = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
-  def metaid = "${metad}".length() >= 2 ? "${metad}" : "_${metad}"
+  def metaid = "${metad}".length() > 2 ? "${metad}" : "_${metad}"
   """
   {
   ##PCGR 0.9.1
@@ -993,7 +991,7 @@ process pcgrreport {
     --output_dir ./ \
     --genome_assembly ${grch_vers} \
     --conf ${config} \
-    --sample_id \$METAID \
+    --sample_id ${metaid} \
     --input_vcf ${vcf} \
     --no-docker \
     --force_overwrite \
@@ -1002,12 +1000,10 @@ process pcgrreport {
     --include_trials \
     --assay ${assay} ${tmb_msi}
 
-  if [[ ${metaid} =~ "_${metad}" ]]; then
-    for x in \$(ls ${metaid}*); do
-      nm=\$(echo \$x | sed "s/${metaid}/${metad}/")
-      mv \$x \$nm
-    done
-  fi
+  for x in \$(ls ${metaid}*); do
+    nm=\$(echo \$x | sed "s/${metaid}/${metad}/")
+    mv \$x \$nm
+  done
 
   } 2>&1 | tee > ${sampleID}.pcgr.log.txt
   """
