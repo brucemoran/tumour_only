@@ -588,11 +588,6 @@ process cpsrreport {
     --conf ${pcgrbase}/data/${grchv}/cpsr_configuration_default.toml \
     --sample_id ${metaid}
   } 2>&1 | tee > ${sampleID}.cpsr.log.txt
-
-  for x in \$(ls ${metaid}*); do
-    nm=\$(echo \$x | sed "s/${metaid}/${metad}/")
-    mv \$x \$nm
-  done
   """
 }
 
@@ -999,11 +994,6 @@ process pcgrreport {
     --tumor_only \
     --include_trials \
     --assay ${assay} ${tmb_msi}
-
-  for x in \$(ls ${metaid}*); do
-    nm=\$(echo \$x | sed "s/${metaid}/${metad}/")
-    mv \$x \$nm
-  done
 
   } 2>&1 | tee > ${sampleID}.pcgr.log.txt
   """
