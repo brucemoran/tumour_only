@@ -559,7 +559,7 @@ process cpsrreport {
 
   label 'med_mem'
 
-  publishDir "${params.outdir}/reports/cpsr", mode: "copy", pattern: "${metad}.cpsr.${grchv}.{html,json.gz}"
+  publishDir "${params.outdir}/reports/cpsr", mode: "copy", pattern: "${metaid}.cpsr.${grchv}.{html,json.gz}"
   publishDir "${params.outdir}/samples/${sampleID}/cpsr", mode: "copy", pattern: "*[!.html]"
 
   input:
@@ -573,7 +573,7 @@ process cpsrreport {
 
   script:
   grchv = "${grchver}".split("\\/")[-1]
-  def metaid = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
+  metaid = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
   """
   {
   ##CPSR v0.6.1
@@ -976,7 +976,7 @@ process pcgrreport {
   assay = params.seqlevel == "wgs" ? "WGS" : params.seqlevel == "exome" ? "WES" : "TARGETED"
   tmb_msi = params.seqlevel == "panel" ? "" : "--estimate_tmb --estimate_msi_status --tmb_algorithm all_coding"
   grchv = "${grchver}".split("\\/")[-1]
-  def metaid = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
+  metaid = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
   """
   {
   ##PCGR 0.9.1
