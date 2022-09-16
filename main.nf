@@ -84,6 +84,7 @@ if(!params.email){
 if(params.seqLevel != "WGS" && params.levelTag == null){
     exit 1, "Please define --levelTag when using --seqLevel exome/panel"
 }
+
 //Global Variables based on input
 params.outdir = "${params.outDir}/${params.seqLevel}_output"
 params.seqlevel = "${params.seqLevel}".toLowerCase()
@@ -572,8 +573,7 @@ process cpsrreport {
 
   script:
   grchv = "${grchver}".split("\\/")[-1]
-  def metad = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
-  def metaid = "${metad}".length() > 2 ? "${metad}" : "_${metad}"
+  def metaid = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
   """
   {
   ##CPSR v0.6.1
@@ -976,8 +976,7 @@ process pcgrreport {
   assay = params.seqlevel == "wgs" ? "WGS" : params.seqlevel == "exome" ? "WES" : "TARGETED"
   tmb_msi = params.seqlevel == "panel" ? "" : "--estimate_tmb --estimate_msi_status --tmb_algorithm all_coding"
   grchv = "${grchver}".split("\\/")[-1]
-  def metad = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
-  def metaid = "${metad}".length() > 2 ? "${metad}" : "_${metad}"
+  def metaid = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
   """
   {
   ##PCGR 0.9.1
