@@ -974,7 +974,8 @@ process pcgrreport {
   grch_vers = "${grchver}".split("\\/")[-1]
   config = params.seqlevel != "wgs" ? "${levelbase}/${params.levelTag}/pcgr_configuration_${params.levelTag}.toml" : "${pcgrbase}/data/${grch_vers}/pcgr_configuration_default.toml"
   assay = params.seqlevel == "wgs" ? "WGS" : params.seqlevel == "exome" ? "WES" : "TARGETED"
-  tmb_msi = params.seqlevel == "panel" ? "" : "--estimate_tmb --estimate_msi_status --tmb_algorithm all_coding"
+  tmb_msi = params.seqlevel == "panel" ? "" : ""
+  //for WGS: --estimate_tmb --estimate_msi_status --tmb_algorithm all_coding
   grchv = "${grchver}".split("\\/")[-1]
   metaid = "${meta}".replaceAll("\\s *", "_").replaceAll("[\\[\\(\\)\\]]","").replaceAll("\"","")
   """
